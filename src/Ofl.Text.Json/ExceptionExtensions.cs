@@ -13,7 +13,7 @@ namespace Ofl.Text.Json
 
         internal static readonly TypeInfo ExceptionTypeInfo = typeof(Exception).GetTypeInfo();
 
-        internal static void WriteException(
+        public static void WriteException(
             this Utf8JsonWriter writer,
             Exception? value, 
             JsonSerializerOptions options
@@ -24,19 +24,16 @@ namespace Ofl.Text.Json
             if (options == null) throw new ArgumentNullException(nameof(options));
 
             // Create the stack of exceptions to write.
-            var stack = new Stack<(Action? pre, Exception? exception, Action? post)>();
+            var stack = new Stack<(Exception? exception, Action? post)>();
 
             // Push the original exception on.
-            stack.Push((null, value, null));
+            stack.Push((value, null));
 
             // While there are items on the stack.
             while (stack.Any())
             {
                 // Pop the item.
-                var (pre, exception, post) = stack.Pop();
-
-                // Is there a pre?  Execute if there is one.
-                pre?.Invoke();
+                var (exception, post) = stack.Pop();
 
                 // If there is no exception, write null.
                 if (exception == null)
@@ -97,7 +94,7 @@ namespace Ofl.Text.Json
                         writer.WritePropertyName(propertyInfo.Name);
 
                         // Push on the stack.
-                        stack.Push((null, value, writer.WriteEndObject));
+                        stack.Push((value, writer.WriteEndObject));
 
                         // Continue.
                         continue;
@@ -113,8 +110,8 @@ namespace Ofl.Text.Json
                         // Write the property name.
                         writer.WritePropertyName(propertyInfo.Name);
 
-                        // Cycle through the items.
-                        stack.Push((value, writer.WriteEndObject));
+                        // Write the exception array.
+                        writer.WriteExceptionArray(exceptions, stack);
 
                         // Continue.
                         continue;
@@ -122,8 +119,78 @@ namespace Ofl.Text.Json
                 }
                 
                 // Call the post action.
-                post();
+                post?.Invoke();
             }
+        }
+
+        private static void WriteExceptionArray(
+            this Utf8JsonWriter writer,
+            IEnumerable<Exception?>? enumerable,
+            Stack<(Exception? exception, Action? post)> stack
+        )
+        {
+            // If the enumerable is null, write null and get out.
+            if (enumerable == null)
+            {
+                // Write null.
+                writer.WriteNullValue();
+
+                // Get out.
+                return;
+            }
+
+            // It's not null, write the start of the array.
+            writer.WriteStartArray();
+
+            // Get the enumerator.
+            using IEnumerator<Exception?> enumerator = enumerable.GetEnumerator();
+
+            // Move to the first item.  If there are no items then just write
+            // an empty array and get out.
+            bool hasItems = enumerator.MoveNext();
+
+            // If there are no items, write an empty array and be done
+            // with it.
+            if (!hasItems)
+            {
+                // Write the end of the array and be done with it.
+                writer.WriteEndArray();
+
+                // Get out.
+                return;
+            }
+
+            // The previous item.
+            Exception? previous = null, current = enumerator.Current;
+
+            // Skip the first iteration.
+            bool skip = true;
+
+            // Cycle through the objects and add to the stack.
+            do
+            {
+                // If skipping, flip.
+                if (skip)
+                {
+                    // Flip.
+                    skip = false;
+
+                    // Contiune.
+                    continue;
+                }
+                else
+                    // Set the previous equal to the current.
+                    previous = current;
+
+                // Push the previous.
+                stack.Push((previous, null));
+
+                // Set the current.
+                current = enumerator.Current;
+            } while (enumerator.MoveNext());
+
+            // The last one will close out the array.
+            stack.Push((current, writer.WriteEndArray));
         }
     }
 }
