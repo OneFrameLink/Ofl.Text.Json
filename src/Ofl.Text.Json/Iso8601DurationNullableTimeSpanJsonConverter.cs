@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml;
 
-namespace Ofl.Serialization.Json.Newtonsoft
+namespace Ofl.Text.Json
 {
     public class Iso8601DurationNullableTimeSpanJsonConverter : JsonConverter<TimeSpan?>
     {

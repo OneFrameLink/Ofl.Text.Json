@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Ofl.Serialization.Json.Newtonsoft
+namespace Ofl.Text.Json
 {
     public static class JsonSerializerExtensions
     {

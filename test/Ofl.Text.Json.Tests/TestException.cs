@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Ofl.Serialization.Json.Newtonsoft.Tests
+namespace Ofl.Text.Json.Tests
 {
     public class TestException : Exception
     {

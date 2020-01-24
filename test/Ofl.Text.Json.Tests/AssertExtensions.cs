@@ -5,7 +5,7 @@ using Newtonsoft.Json.Serialization;
 using Ofl.Linq;
 using Xunit;
 
-namespace Ofl.Serialization.Json.Newtonsoft.Tests
+namespace Ofl.Text.Json.Tests
 {
     internal static class AssertExtensions
     {

@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Ofl.Serialization.Json.Newtonsoft
+namespace Ofl.Text.Json
 {
     public class UnixTimestampNullableDateTimeOffsetJsonConverter : JsonConverter<DateTimeOffset?>
     {

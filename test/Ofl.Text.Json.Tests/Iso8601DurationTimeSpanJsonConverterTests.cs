@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
 
-namespace Ofl.Serialization.Json.Newtonsoft.Tests
+namespace Ofl.Text.Json.Tests
 {
     public class Iso8601DurationTimeSpanJsonConverterTests
     {
