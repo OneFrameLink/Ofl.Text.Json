@@ -8,9 +8,29 @@ namespace Ofl.Text.Json
 {
     internal static class ExceptionExtensions
     {
-        internal static readonly TypeInfo EnumerableExceptionTypeInfo = typeof(IEnumerable<Exception>).GetTypeInfo();
+        private static class Constant
+        {
+            public static readonly TypeInfo ExceptionTypeInfo = typeof(Exception).GetTypeInfo();
 
-        internal static readonly TypeInfo ExceptionTypeInfo = typeof(Exception).GetTypeInfo();
+            public static readonly TypeInfo EnumerableExceptionTypeInfo = typeof(IEnumerable<Exception>).GetTypeInfo();
+        }
+
+        private static class ExceptionPropertyInfo
+        {
+            public static readonly PropertyInfo Message =
+                typeof(Exception).GetProperty(nameof(Exception.Message));
+            public static readonly PropertyInfo Source =
+                typeof(Exception).GetProperty(nameof(Exception.Source));
+            public static readonly PropertyInfo HResult =
+                typeof(Exception).GetProperty(nameof(Exception.HResult));
+            public static readonly PropertyInfo HelpLink =
+                typeof(Exception).GetProperty(nameof(Exception.HelpLink));
+            public static readonly PropertyInfo StackTrace =
+                typeof(Exception).GetProperty(nameof(Exception.StackTrace));
+            public static readonly PropertyInfo Data =
+                typeof(Exception).GetProperty(nameof(Exception.Data));
+        }
+
 
         // TODO: Remove recursion.
         public static void WriteException(
@@ -29,9 +49,6 @@ namespace Ofl.Text.Json
                 // Write null.
                 writer.WriteNullValue();
 
-                // Write the end.
-                writer.WriteEndObject();
-
                 // Get out.
                 return;
             }
@@ -39,15 +56,18 @@ namespace Ofl.Text.Json
             // Start writing the object.
             writer.WriteStartObject();
 
-            // TODO: Serialize the Data property on
-            // Exception, if there are values.                
-
             // Write properties.
-            writer.WriteString(nameof(Exception.HelpLink), exception.HelpLink);
-            writer.WriteNumber(nameof(Exception.HResult), exception.HResult);
-            writer.WriteString(nameof(Exception.Message), exception.Message);
-            writer.WriteString(nameof(Exception.Source), exception.Source);
-            writer.WriteString(nameof(Exception.StackTrace), exception.StackTrace);
+            writer.WriteString(ExceptionPropertyInfo.Message, exception.Message, options);
+            writer.WriteString(ExceptionPropertyInfo.Source, exception.Source, options);
+            writer.WriteNumber(ExceptionPropertyInfo.HResult, exception.HResult, options);
+            writer.WriteString(ExceptionPropertyInfo.HelpLink, exception.HelpLink, options);
+            writer.WriteString(ExceptionPropertyInfo.StackTrace, exception.StackTrace, options);
+
+            // Write the property name.
+            writer.WritePropertyName(ExceptionPropertyInfo.Data, options);
+
+            // Write the data property.
+            JsonSerializer.Serialize(writer, exception.Data, options);
 
             // Need to write the type shim.  Write the meta property
             writer.WritePropertyName("$Meta");
@@ -80,23 +100,23 @@ namespace Ofl.Text.Json
             foreach (PropertyInfo propertyInfo in type.GetPropertiesWithPublicInstanceGetters())
             {
                 // Is it assignable to exception?
-                if (ExceptionTypeInfo.IsAssignableFrom(propertyInfo.PropertyType))
+                if (Constant.ExceptionTypeInfo.IsAssignableFrom(propertyInfo.PropertyType))
                 {
                     // Write the property name.
-                    writer.WritePropertyName(propertyInfo.Name);
+                    writer.WritePropertyName(propertyInfo, options);
 
                     // Write the object.
                     writer.WriteException((Exception?) propertyInfo.GetValue(exception), options);
                 }
                 // If this is assignable to an IEnumerable<Exception> then
                 // get that.
-                else if (EnumerableExceptionTypeInfo.IsAssignableFrom(propertyInfo.PropertyType))
+                else if (Constant.EnumerableExceptionTypeInfo.IsAssignableFrom(propertyInfo.PropertyType))
                 {
                     // Get the value.
                     var exceptions = (IEnumerable<Exception>?) propertyInfo.GetValue(exception);
 
                     // Write the property name.
-                    writer.WritePropertyName(propertyInfo.Name);
+                    writer.WritePropertyName(propertyInfo, options);
 
                     // Write the exception array.
                     writer.WriteExceptionArray(exceptions, options);

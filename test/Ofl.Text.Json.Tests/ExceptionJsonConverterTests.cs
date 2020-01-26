@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 
 namespace Ofl.Text.Json.Tests
@@ -13,32 +12,43 @@ namespace Ofl.Text.Json.Tests
         private static TestException CreateTestException()
         {
             // Creates the invalid operation exception.
-            Exception CreateFillerException() => new InvalidOperationException(Guid.NewGuid().ToString());
+            static Exception CreateFillerException() => new InvalidOperationException(Guid.NewGuid().ToString());
 
             // Create an exception and return.
-            return new TestException
-            {
-                ExceptionProperty = CreateFillerException(),
-                ExceptionPropertyWithJsonPropertyAttribute = CreateFillerException(),
-                ExceptionsProperty = new List<Exception> {
+            return new TestException(
+                CreateFillerException(),
+                new List<Exception> {
                     CreateFillerException(),
                     CreateFillerException()
                 },
-                AggregateException = new AggregateException(new List<Exception> {
+                CreateFillerException(),
+                new AggregateException(new List<Exception> {
                     CreateFillerException(),
                     CreateFillerException()
                 })
-            };
+            );
         }
 
-        private static JsonDocument SerializeTestException() => JsonDocument.Parse(
-            JsonSerializer.Serialize(
-                CreateTestException(),
+        private static (TestException exception, JsonElement element) Setup(
+            JsonNamingPolicy? jsonNamingPolicy = null
+        ) {
+            // Create the exception.
+            TestException exception = CreateTestException();
+
+            // Serialize.
+            string json = JsonSerializer.Serialize(exception,
                 new JsonSerializerOptions {
-                    Converters = { new ExceptionJsonConverter() }
+                    Converters = { new ExceptionJsonConverter() },
+                    PropertyNamingPolicy = jsonNamingPolicy
                 }
-            )
-        );
+            );
+
+            // Parse.
+            JsonDocument document = JsonDocument.Parse(json);
+
+            // Return the pair.
+            return (exception, document.RootElement);
+        }
 
         #endregion
 
@@ -48,52 +58,54 @@ namespace Ofl.Text.Json.Tests
         public void Test_SingleExceptionProperty()
         {
             // Setup.
-            TestException setup = CreateTestException();
-
-            // Serialize, then get the document.
-            JToken token = JToken.FromObject(setup.TestException, setup.Serializer);
+            (TestException expected, JsonElement actual) = Setup();
 
             // Start asserting.
-            setup.Serializer.ContractResolver.AssertExceptionsEqual(setup.TestException.ExceptionProperty, token["ExceptionProperty"]);
+            AssertExtensions.AssertExceptionsEqual(expected.ExceptionProperty, actual, nameof(TestException.ExceptionProperty));
         }
 
         [Fact]
         public void Test_EnumerableExceptionsProperty()
         {
             // Setup.
-            TestException TestException = CreateTestException();
-
-            // Create the token.
-            JToken token = JToken.FromObject(setup.TestException, setup.Serializer);
+            (TestException expected, JsonElement actual) = Setup();
 
             // Start asserting.
-            setup.Serializer.ContractResolver.AssertExceptionsEqual(setup.TestException.ExceptionsProperty, token["ExceptionsProperty"]);
+            AssertExtensions.AssertExceptionsEqual(expected.ExceptionsProperty, actual, nameof(TestException.ExceptionsProperty));
         }
 
         [Fact]
         public void Test_AggregateException()
         {
             // Setup.
-            TestException TestException = CreateTestException();
-
-            // Create the token.
-            JToken token = JToken.FromObject(setup.TestException, setup.Serializer);
+            (TestException expected, JsonElement actual) = Setup();
 
             // Start asserting.
-            setup.Serializer.ContractResolver.AssertExceptionsEqual(setup.TestException.AggregateException, token["AggregateException"]);
+            AssertExtensions.AssertExceptionsEqual(expected.AggregateException, actual, nameof(TestException.AggregateException));
         }
 
         [Fact]
         public void Test_ExceptionPropertyWithJsonPropertyAttribute()
         {
             // Setup.
-            TestException TestException = CreateTestException();
-
-            // Create the token.
-            JToken token = JToken.FromObject(setup.TestException, setup.Serializer);
+            (TestException expected, JsonElement actual) = Setup();
 
             // Start asserting.
-            setup.Serializer.ContractResolver.AssertExceptionsEqual(setup.TestException.ExceptionPropertyWithJsonPropertyAttribute, token[TestException.ExceptionPropertyWithJsonPropertyAttributeName]);
+            AssertExtensions.AssertExceptionsEqual(expected.ExceptionPropertyWithJsonPropertyAttribute, actual, TestException.ExceptionPropertyWithJsonPropertyAttributeName);
+        }
+
+        [Fact]
+        public void Test_ExceptionProperty_Respects_NamingPolicy()
+        {
+            // Setup.
+            (TestException exception, JsonElement document) = Setup(JsonNamingPolicy.CamelCase);
+
+            // Get the expected name.
+            string expected = JsonNamingPolicy.CamelCase.ConvertName(nameof(exception.ExceptionProperty));
+
+            // Try and get the property
+            Assert.True(document.TryGetProperty(expected, out _),
+                $"Could not find the expected property {expected} on the {nameof(JsonElement)}.");
         }
 
         #endregion

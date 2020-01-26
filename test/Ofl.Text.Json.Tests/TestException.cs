@@ -1,20 +1,42 @@
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace Ofl.Text.Json.Tests
 {
-    public class TestException : Exception
+    internal class TestException : Exception
     {
-        public Exception ExceptionProperty { get; set; }
+        #region Constructor
 
-        public IReadOnlyCollection<Exception> ExceptionsProperty { get; set; }
+        public TestException(
+            Exception exception,
+            IReadOnlyCollection<Exception> exceptions,
+            Exception exceptionPropertyWithJsonPropertyAttribute,
+            AggregateException aggregateException
+        )
+        {
+            // Assign values.
+            ExceptionProperty = exception;
+            ExceptionsProperty = exceptions;
+            ExceptionPropertyWithJsonPropertyAttribute = exceptionPropertyWithJsonPropertyAttribute;
+            AggregateException = aggregateException;
+        }
+
+        #endregion
+
+        #region Instance, read-only state
+
+        public Exception ExceptionProperty { get; }
+
+        public IReadOnlyCollection<Exception> ExceptionsProperty { get; }
 
         internal const string ExceptionPropertyWithJsonPropertyAttributeName = "MyException";
 
-        [JsonProperty(ExceptionPropertyWithJsonPropertyAttributeName)]
-        public Exception ExceptionPropertyWithJsonPropertyAttribute { get; set; }
+        [JsonPropertyName(ExceptionPropertyWithJsonPropertyAttributeName)]
+        public Exception ExceptionPropertyWithJsonPropertyAttribute { get; }
 
-        public AggregateException AggregateException { get; set; }
+        public AggregateException AggregateException { get; }
+
+        #endregion
     }
 }
