@@ -108,6 +108,20 @@ namespace Ofl.Text.Json.Tests
                 $"Could not find the expected property {expected} on the {nameof(JsonElement)}.");
         }
 
+        [Fact]
+        public void Test_Data_Is_Serialized()
+        {
+            // Setup.
+            (TestException exception, JsonElement document) = Setup();
+
+            // The name.
+            const string expected = nameof(exception.Data);
+
+            // Try and get the property
+            Assert.True(document.TryGetProperty(expected, out _),
+                $"Could not find the expected property {expected} on the {nameof(JsonElement)}.");
+        }
+
         #endregion
     }
 }
