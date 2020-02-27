@@ -1,10 +1,17 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29806.167
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{BA70223C-E8B7-4D30-B0E5-132541162D0B}"
+	ProjectSection(SolutionItems) = preProject
+		src\directory.build.props = src\directory.build.props
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{7F035238-2967-45E6-B89F-DEDEF79EC043}"
+	ProjectSection(SolutionItems) = preProject
+		test\.gitignore = test\.gitignore
+		test\directory.build.props = test\directory.build.props
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ofl.Text.Json", "src\Ofl.Text.Json\Ofl.Text.Json.csproj", "{69F02D88-B925-4207-B75F-858E02CC40AC}"
 EndProject
@@ -62,5 +69,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{69F02D88-B925-4207-B75F-858E02CC40AC} = {BA70223C-E8B7-4D30-B0E5-132541162D0B}
 		{618CA8CC-047A-456A-9115-4FEBD6173C3E} = {7F035238-2967-45E6-B89F-DEDEF79EC043}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E48CCB83-9181-4442-9208-1C1AAE310F33}
 	EndGlobalSection
 EndGlobal

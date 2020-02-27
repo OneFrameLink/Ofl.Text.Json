@@ -60,11 +60,11 @@ before_build:
     
 #--------------------------------------------------
 # Testing
-# TODO: Figure out how to work with just the assembly output.
 #--------------------------------------------------
-test_script:
-   - dotnet test test\%APPVEYOR_PROJECT_NAME%.Tests\%APPVEYOR_PROJECT_NAME%.Tests.csproj
- 
+test:
+  assemblies:
+    only:
+      - '**\*.Tests.dll' 
 #--------------------------------------------------
 # Build hooks - on_success
 #

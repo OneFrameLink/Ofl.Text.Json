@@ -10,6 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Ofl.Cloning" Version="3.0.12" />
     <PackageReference Include="Ofl.Reflection" Version="3.0.12" />
-    <PackageReference Include="System.Text.Json" Version="4.7.0" />
+    <PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
+    <PackageReference Include="System.Text.Json" Version="4.7.1" />
   </ItemGroup>
 </Project>
