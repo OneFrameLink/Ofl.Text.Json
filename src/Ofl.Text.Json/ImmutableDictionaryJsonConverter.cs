@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace Ofl.Text.Json
 {
-    public class ImmutableDictionaryJsonConverterFactory : JsonConverterFactory
+    public class ImmutableDictionaryJsonConverter : JsonConverterFactory
     {
         public override bool CanConvert(Type typeToConvert)
         {

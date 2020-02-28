@@ -7,13 +7,13 @@ using Xunit;
 
 namespace Ofl.Text.Json.Tests
 {
-    public class ImmutableDictionaryJsonConverterFactoryTests
+    public class ImmutableDictionaryJsonConverterTests
     {
         #region Helpers
 
         public static JsonSerializerOptions CreateJsonSerializerOptions() =>
             new JsonSerializerOptions {
-                Converters = { new ImmutableDictionaryJsonConverterFactory() }
+                Converters = { new ImmutableDictionaryJsonConverter() }
             };
 
         private static void AssertSerializedJson<TKey, TValue>(
