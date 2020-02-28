@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -35,7 +34,7 @@ namespace Ofl.Text.Json
             if (options == null) throw new ArgumentNullException(nameof(options));
 
             // Is this null?  If so, return null.
-            if (reader.TokenType == JsonTokenType.Null) return null;
+            if (reader.TokenType == JsonTokenType.Null) return null!;
 
             // If it is not an object, throw.
             if (reader.TokenType != JsonTokenType.StartObject)
@@ -98,7 +97,7 @@ namespace Ofl.Text.Json
                 writer.WritePropertyName(key);
 
                 // Write the value.
-                JsonSerializer.Serialize(pair.Value, typeof(TValue), options);
+                JsonSerializer.Serialize(writer, pair.Value, options);
             }
 
             // Close the object off.

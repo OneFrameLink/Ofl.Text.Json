@@ -1,4 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using Ofl.Linq;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text.Json;
 using Xunit;
 
@@ -13,27 +16,65 @@ namespace Ofl.Text.Json.Tests
                 Converters = { new ImmutableDictionaryJsonConverterFactory() }
             };
 
+        private static void AssertSerializedJson<TKey, TValue>(
+            IImmutableDictionary<TKey, TValue> expected
+        )
+            where TKey : notnull
+        {
+            // Create the options.
+            JsonSerializerOptions options = CreateJsonSerializerOptions();
+
+            // Serialize.
+            string json = JsonSerializer.Serialize(expected, options);
+
+            // Deserialize into another immutable dictionary.
+            // We are essentially round tripping.
+            IImmutableDictionary<TKey, TValue> actual = JsonSerializer
+                .Deserialize<IImmutableDictionary<TKey, TValue>>(json, options);
+
+            // Counts differ?  Bail.
+            Assert.Equal(expected.Count, actual.Count);
+
+            // Make sure everything is equal.
+            foreach (KeyValuePair<TKey, TValue> pair in expected)
+            {
+                // Assert everything is equal.
+                Assert.True(actual.TryGetValue(pair.Key, out TValue value));
+                Assert.Equal(pair.Value, value);
+            }
+        }
+
         #endregion
 
         #region Tests
 
         [Fact]
-        public void Test_ImmutableDictionary_With_Non_String_Key_Serialization()
+        public void Test_ImmutableDictionary_Serialization_Int32_Key_Round_Trip()
         {
-            // Create the options.
-            JsonSerializerOptions options = CreateJsonSerializerOptions();
+            // Create the test.
+            var test = ImmutableDictionary.CreateRange(EnumerableExtensions.From(
+                new KeyValuePair<int, string>(1, "hello"),
+                new KeyValuePair<int, string>(2, "there")
+            ));
 
-            // Serialize a test with numbers.
-            const string json = "{ \"1\": \"hello\", \"2\": \"there\" }";
+            // Assert 
+            AssertSerializedJson(test);
+        }
 
-            // Serialize.
-            ImmutableDictionary<int, string> deserialized =
-                JsonSerializer.Deserialize<ImmutableDictionary<int, string>>(json, options);
+        [Fact]
+        public void Test_ImmutableDictionary_Serialization_DateTimeOffset_Key_Round_Trip()
+        {
+            // Now.
+            DateTimeOffset now = DateTimeOffset.Now;
 
-            // Validate the keys.
-            Assert.Equal(2, deserialized.Count);
-            Assert.Equal("hello", deserialized[1]);
-            Assert.Equal("there", deserialized[2]);
+            // Create the test.
+            var test = ImmutableDictionary.CreateRange(EnumerableExtensions.From(
+                new KeyValuePair<DateTimeOffset, string>(now, "hello"),
+                new KeyValuePair<DateTimeOffset, string>(now.AddDays(1), "there")
+            ));
+
+            // Assert 
+            AssertSerializedJson(test);
         }
 
         #endregion
