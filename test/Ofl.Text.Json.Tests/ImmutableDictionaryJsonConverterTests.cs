@@ -44,6 +44,48 @@ namespace Ofl.Text.Json.Tests
             }
         }
 
+        private static void AssertSerializedJson(
+            IImmutableDictionary<object, object> expected
+        )
+        {
+            // Create the options.
+            JsonSerializerOptions options = CreateJsonSerializerOptions();
+
+            // Serialize.
+            string json = JsonSerializer.Serialize(expected, options);
+
+            // Deserialize into another immutable dictionary.
+            // We are essentially round tripping.
+            IImmutableDictionary<object, object> actual = JsonSerializer
+                .Deserialize<IImmutableDictionary<object, object>>(json, options);
+
+            // Counts differ?  Bail.
+            Assert.Equal(expected.Count, actual.Count);
+
+            // Make sure everything is equal.
+            foreach (KeyValuePair<object, object> pair in expected)
+            {
+                // Serialize the key.
+                string key = JsonSerializer.Serialize(pair.Key, options);
+
+                // Create a JsonElement from the value in the expected.
+                json = JsonSerializer.Serialize(pair.Value, options);
+
+                // Deserialize.
+                JsonElement expectedElement = JsonSerializer.Deserialize<JsonElement>(json, options);
+
+                // Assert everything is equal.
+                Assert.True(actual.TryGetValue(key, out object? value));
+
+                // Get the actual element.
+                var actualElement = (JsonElement) value!;
+
+                // Assert.
+                Assert.Equal(expectedElement.ValueKind, actualElement.ValueKind);
+                Assert.Equal(expectedElement.GetRawText(), actualElement.GetRawText());
+            }
+        }
+
         #endregion
 
         #region Tests
@@ -62,15 +104,12 @@ namespace Ofl.Text.Json.Tests
         }
 
         [Fact]
-        public void Test_ImmutableDictionary_Serialization_DateTimeOffset_Key_Round_Trip()
+        public void Test_ImmutableDictionary_Serialization_Object_Key_Round_Trip()
         {
-            // Now.
-            DateTimeOffset now = DateTimeOffset.Now;
-
             // Create the test.
             var test = ImmutableDictionary.CreateRange(EnumerableExtensions.From(
-                new KeyValuePair<DateTimeOffset, string>(now, "hello"),
-                new KeyValuePair<DateTimeOffset, string>(now.AddDays(1), "there")
+                new KeyValuePair<object, object>(1, "hello"),
+                new KeyValuePair<object, object>(2, "there")
             ));
 
             // Assert 

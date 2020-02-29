@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.ComponentModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -10,21 +9,23 @@ namespace Ofl.Text.Json
     public class ImmutableDictionaryJsonConverter<TKey, TValue> : JsonConverter<IImmutableDictionary<TKey, TValue>>
         where TKey : notnull
     {
-        #region Static constructor.
+        #region Constructor
 
-        static ImmutableDictionaryJsonConverter()
+        public ImmutableDictionaryJsonConverter()
         {
-            // Get the type converter for the key.
-            TypeConverter = TypeDescriptor.GetConverter(typeof(TKey));
+            // Get the helpers.
+            (_keyDeserializer, _valueDeserializer) = ImmutableDictionaryJsonConverterExtensions
+                .GetImmutableDictionaryHelpers<TKey, TValue>();
         }
+
 
         #endregion
 
-        #region Static, read only members
+        #region Instance, read-only state
 
-        // ReSharper disable StaticMemberInGenericType
-        private static readonly TypeConverter TypeConverter;
-        // ReSharper restore StaticMemberInGenericType
+        private readonly Func<string, JsonSerializerOptions, TKey> _keyDeserializer;
+
+        private readonly ImmutableDictionaryJsonConverterExtensions.ValueDeserializer<TValue> _valueDeserializer;
 
         #endregion
 
@@ -46,24 +47,28 @@ namespace Ofl.Text.Json
             IImmutableDictionary<TKey, TValue> values = ImmutableDictionary<TKey, TValue>.Empty;
 
             // Cycle.
-            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+            while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
             {
                 // We should be on the name now.  Get the string.
                 string stringKey = reader.GetString();
+
+                // Convert the key.
+                TKey key = _keyDeserializer(stringKey, options);
 
                 // Move the reader now.
                 if (!reader.Read())
                     throw new JsonException($"Expected call to {nameof(Utf8JsonReader.Read)} to return true, returned false.");
 
-                // Convert the key.
-                TKey key = (TKey) TypeConverter.ConvertFromInvariantString(stringKey);
-
                 // Deserialize the value.
-                TValue value = JsonSerializer.Deserialize<TValue>(ref reader, options);
+                TValue value = _valueDeserializer(ref reader, options);
 
                 // Add.
                 values = values.Add(key, value);
             }
+
+            // If the token is not an end object, throw.
+            if (reader.TokenType != JsonTokenType.EndObject)
+                throw new JsonException($"Expected a token of {JsonTokenType.EndObject}, actual {reader.TokenType}.");
 
             // Return the values.
             return values;
@@ -90,7 +95,7 @@ namespace Ofl.Text.Json
             foreach (KeyValuePair<TKey, TValue> pair in value)
             {
                 // Get the key property.
-                string key = TypeConverter.ConvertToInvariantString(null!, pair.Key);
+                string key = JsonSerializer.Serialize(pair.Key, pair.Key.GetType(), options);
 
                 // Run through the dictionary json policy, if there is one.
                 key = options.DictionaryKeyPolicy?.ConvertName(key) ?? key;
