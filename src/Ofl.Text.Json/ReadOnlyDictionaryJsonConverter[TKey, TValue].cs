@@ -1,16 +1,17 @@
 ﻿using System;
-using System.Collections.Immutable;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Ofl.Text.Json
 {
-    public class ImmutableDictionaryJsonConverter<TKey, TValue> : JsonConverter<IImmutableDictionary<TKey, TValue>>
+    public class ReadOnlyDictionaryJsonConverter<TKey, TValue> : JsonConverter<IReadOnlyDictionary<TKey, TValue>>
         where TKey : notnull
     {
         #region Constructor
 
-        public ImmutableDictionaryJsonConverter()
+        public ReadOnlyDictionaryJsonConverter()
         {
             // Get the helpers.
             (_keyDeserializer, _valueDeserializer) = DictionaryJsonConverterExtensions
@@ -30,7 +31,11 @@ namespace Ofl.Text.Json
 
         #region Overrides
 
-        public override IImmutableDictionary<TKey, TValue> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override IReadOnlyDictionary<TKey, TValue> Read(
+            ref Utf8JsonReader reader, 
+            Type typeToConvert, 
+            JsonSerializerOptions options
+        )
         {
             // Validate parameters.
             if (options == null) throw new ArgumentNullException(nameof(options));
@@ -43,7 +48,7 @@ namespace Ofl.Text.Json
                 throw new JsonException($"Expected a token type of {nameof(JsonTokenType.StartObject)}, encountered {reader.TokenType}.");
 
             // The return value.
-            IImmutableDictionary<TKey, TValue> values = ImmutableDictionary<TKey, TValue>.Empty;
+            var values = new Dictionary<TKey, TValue>();
 
             // Cycle.
             while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
@@ -62,7 +67,7 @@ namespace Ofl.Text.Json
                 TValue value = _valueDeserializer(ref reader, options);
 
                 // Add.
-                values = values.Add(key, value);
+                values.Add(key, value);
             }
 
             // If the token is not an end object, throw.
@@ -70,12 +75,12 @@ namespace Ofl.Text.Json
                 throw new JsonException($"Expected a token of {JsonTokenType.EndObject}, actual {reader.TokenType}.");
 
             // Return the values.
-            return values;
+            return new ReadOnlyDictionary<TKey, TValue>(values);
         }
 
         public override void Write(
             Utf8JsonWriter writer,
-            IImmutableDictionary<TKey, TValue> value,
+            IReadOnlyDictionary<TKey, TValue> value,
             JsonSerializerOptions options
         ) => writer.Write(value, options);
 
