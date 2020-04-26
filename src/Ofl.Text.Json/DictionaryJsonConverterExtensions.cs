@@ -39,8 +39,11 @@ namespace Ofl.Text.Json
             // Cycle through the pairs.
             foreach (KeyValuePair<TKey, TValue> pair in value)
             {
-                // Get the key property.
-                string key = JsonSerializer.Serialize(pair.Key, pair.Key.GetType(), options);
+                // Get the key property.  If the key is of type string, then
+                // just use that.
+                string key = pair.Key is string s
+                    ? s
+                    : JsonSerializer.Serialize(pair.Key, pair.Key.GetType(), options);
 
                 // Run through the dictionary json policy, if there is one.
                 key = options.DictionaryKeyPolicy?.ConvertName(key) ?? key;
@@ -75,7 +78,8 @@ namespace Ofl.Text.Json
         private static Func<string, JsonSerializerOptions, T> GetKeyDeserializer<T>()
         {
             // If this is an object, special case.
-            if (typeof(T) == typeof(object))
+            // Also if the key is of type string then just return the string.
+            if (typeof(T) == typeof(object) || typeof(T) == typeof(string))
                 // Force to T (which is object)
                 return (v, o) => (T) (object) v;
 

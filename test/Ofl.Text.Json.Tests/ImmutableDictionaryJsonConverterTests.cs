@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text.Json;
 using Xunit;
 
@@ -16,7 +17,7 @@ namespace Ofl.Text.Json.Tests
                 Converters = { new ImmutableDictionaryJsonConverter() }
             };
 
-        private static void AssertSerializedJson<TKey, TValue>(
+        private static string AssertSerializedJson<TKey, TValue>(
             IImmutableDictionary<TKey, TValue> expected
         )
             where TKey : notnull
@@ -38,10 +39,17 @@ namespace Ofl.Text.Json.Tests
             // Make sure everything is equal.
             foreach (KeyValuePair<TKey, TValue> pair in expected)
             {
-                // Assert everything is equal.
-                Assert.True(actual.TryGetValue(pair.Key, out TValue value));
+                // Get the key from the actual first.
+                // This insures that the key is found (in the case of strings)
+                TKey key = actual.Keys.Single(k => k.Equals(pair.Key));
+
+                // Assert the value.
+                Assert.True(actual.TryGetValue(key, out TValue value));
                 Assert.Equal(pair.Value, value);
             }
+
+            // Return the dictionary.
+            return json;
         }
 
         private static void AssertSerializedJson(
@@ -89,6 +97,40 @@ namespace Ofl.Text.Json.Tests
         #endregion
 
         #region Tests
+
+        [Fact]
+        public void Test_ImmutableDictionary_Serialization_String_Keys_Are_Not_Quoted()
+        {
+            // Create the test.
+            var test = ImmutableDictionary.CreateRange(EnumerableExtensions.From(
+                new KeyValuePair<string, string>("1", "hello"),
+                new KeyValuePair<string, string>("2", "there")
+            ));
+
+            // Assert 
+            string json = AssertSerializedJson(test);
+
+            // There should not be quotes in the string.  Get a document.
+            JsonElement document = JsonSerializer.Deserialize<JsonElement>(json);
+
+            // Get the keys.
+            foreach (var property in document.EnumerateObject())
+                // Look up the property name.
+                Assert.True(test.TryGetValue(property.Name, out var _), $"The property \"{property.Name}\" could not be found in the serialized test dictionary.");
+        }
+
+        [Fact]
+        public void Test_ImmutableDictionary_Serialization_String_Key_Round_Trip()
+        {
+            // Create the test.
+            var test = ImmutableDictionary.CreateRange(EnumerableExtensions.From(
+                new KeyValuePair<string, string>("1", "hello"),
+                new KeyValuePair<string, string>("2", "there")
+            ));
+
+            // Assert 
+            AssertSerializedJson(test);
+        }
 
         [Fact]
         public void Test_ImmutableDictionary_Serialization_Int32_Key_Round_Trip()
